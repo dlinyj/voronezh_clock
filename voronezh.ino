@@ -1,12 +1,8 @@
 #include <LiquidCrystal.h>
+#include <TimeLib.h>
 
-int h,m,s;// переменные для часов, минут, секунд
-unsigned long previousMillis = 0;  
-const long interval = 1000;
-int keyAnalog;
-
+tmElements_t m_time = {0};
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);// RS E
-
 
 void setup() {
 	Serial.begin(9600);
@@ -14,101 +10,118 @@ void setup() {
 }
 
 int settime () {
-int set = 0;
-	keyAnalog =  analogRead(A0);
+	int set = 0;
+	int keyAnalog =  analogRead(A0);
 	delay(50); //Timer 0
-	if (keyAnalog < 100) { //right
-		set++;
-		m++;
-		if (m > 59) m = 0;
-		goto exit;
-	}	
-	if ((keyAnalog < 200) && (keyAnalog > 130)) { //up
-		s = 0;
-		h++;
-		if (h > 23) h = 0;
-		goto exit;
-	} 
+
 	if ((keyAnalog < 800) && (keyAnalog > 600)) { //select = reset
 		set++;
-		m = 0;
-		h = 0;
+		m_time = {0};
 		goto exit;
 	}
-	if ((keyAnalog < 600) && (keyAnalog > 400)) { //left
+	if (keyAnalog < 100) { //right
 		set++;
-		m--;
-		if (m < 0) m = 59;
+		m_time.Minute++; //m++;
+		if (m_time.Minute > 59) m_time.Minute = 0;
 		goto exit;
 	}	
+	if ((keyAnalog < 600) && (keyAnalog > 400)) { //left
+		set++;
+		if (m_time.Minute == 0) {
+			m_time.Minute = 59;
+		} else {
+			m_time.Minute--;
+		}
+		goto exit;
+	}
+	
+	if ((keyAnalog < 200) && (keyAnalog > 130)) { //up
+		m_time.Hour++; //h++;
+		if (m_time.Hour > 23) m_time.Hour = 0;
+		goto exit;
+	} 
+
 	if ((keyAnalog < 400) && (keyAnalog > 200)) { //down
 		set++;
-		h--;
-		if (h < 0) h = 23;
+		if (m_time.Hour == 0) {
+			m_time.Hour = 23;
+		} else {
+			m_time.Hour--;
+		}
 		goto exit;
 	}
 exit:
 	if (set) {
-		s = 0;
+		m_time.Second = 0;
 	}
 	delay(200);
 	return set;
 }
 
-void loop() {
-	settime();
+int calc_of_the_current_time () {
+	static unsigned long previousMillis = 0;  
+	const long interval = 1000;
 	unsigned long currentMillis = millis();
 	if(currentMillis - previousMillis > interval) {
 		previousMillis = currentMillis;
-		s++;    // добавляем единицу, равносильно записи s=s+1;
-		// секция подсчета секунд
-		if (s > 59) {   // если значение s больше 59
-			s = 0;       // присваиваем значение 0 переменной s
-			m++;     // добавляем 1 к переменной m отвечающей за минуты
+		m_time.Second++;    
+		if (m_time.Second > 59) {   // если значение s больше 59
+			m_time.Second = 0;       // присваиваем значение 0 переменной s
+			m_time.Minute++;     // добавляем 1 к переменной m отвечающей за минуты
 		}
 		// секция подсчета минут
-		if (m > 59) {   // если значение m больше 59
-			m = 0;       // присваиваем значение 0 переменной m
-			h++;     // добавляем 1 к переменной h отвечающей за часы
+		if (m_time.Minute > 59) {   // если значение m больше 59
+			m_time.Minute = 0;       // присваиваем значение 0 переменной m
+			m_time.Hour++;     // добавляем 1 к переменной h отвечающей за часы
 		}
 		// секция подсчета часов
-		if (h > 23) {  // если значение h больше 23
-			h = 0;       // присваиваем значение 0 переменной h
+		if (m_time.Hour  > 23) {  // если значение h больше 23
+			m_time.Hour  = 0;       // присваиваем значение 0 переменной h
 		}
-		// секция вывода информации
-		// вывод секунд
-		if (s<10) { //если секунд меньше 10
-			lcd.setCursor(6, 0); // курсор в 6 позицию 0 строки
-			lcd.print(0); //печатаем 0
-			lcd.setCursor(7, 0); //курсор в 7 позицию 0 строки
-			lcd.print(s); //печатаем значение переменной s
-		}	else {
-			lcd.setCursor(6, 0); //иначе курсор в 6 позицию 0 строки
-			lcd.print(s); // печатаем значение переменной s
-		}
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+void print_the_time () {
+	if (m_time.Second < 10) { //если секунд меньше 10
+		lcd.setCursor(6, 0); // курсор в 6 позицию 0 строки
+		lcd.print(0); //печатаем 0
+		lcd.setCursor(7, 0); //курсор в 7 позицию 0 строки
+		lcd.print(m_time.Second); //печатаем значение переменной s
+	}	else {
+		lcd.setCursor(6, 0); //иначе курсор в 6 позицию 0 строки
+		lcd.print(m_time.Second); // печатаем значение переменной s
+	}
 		lcd.setCursor(5, 0); // курсор в 5 позицию 0 строки
 		lcd.print(":"); //  печатаем разделитель между секундами и минутами
 			// вывод минут
-		if (m<10) {
+	if (m_time.Minute < 10) {
 			lcd.setCursor(3, 0);
 			lcd.print(0);
 			lcd.setCursor(4, 0);
-			lcd.print(m);
-		} else {
-			lcd.setCursor(3, 0);
-			lcd.print(m);
-		}
+			lcd.print(m_time.Minute);
+	} else {
+		lcd.setCursor(3, 0);
+		lcd.print(m_time.Minute);
+	}
 		lcd.setCursor(2, 0); // курсор в 2 позицию 0 строки
 		lcd.print(":"); //  печатаем разделитель между минутами и часами
 		// вывод часов
-		if (h<10) {
-			lcd.setCursor(0, 0);
-			lcd.print(0);
-			lcd.setCursor(1, 0);
-			lcd.print(h);
-		} else {
-			lcd.setCursor(0, 0);
-			lcd.print(h);
-		}
+	if (m_time.Hour < 10) {
+		lcd.setCursor(0, 0);
+		lcd.print(0);
+		lcd.setCursor(1, 0);
+		lcd.print(m_time.Hour);
+	} else {
+		lcd.setCursor(0, 0);
+		lcd.print(m_time.Hour);
+	}
+}
+
+void loop() {
+	if ( settime() || calc_of_the_current_time ()) {
+		print_the_time ();
 	}
 }
