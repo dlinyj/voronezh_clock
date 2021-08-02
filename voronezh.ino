@@ -165,7 +165,7 @@ void send_to_voronezh() {
 	delay(LONG_NEG);
 	digitalWrite(NEG_SIG, LOW);
 	delay(SHORT_P);
-	
+//	Serial.print("Hello world."); //for debug	
 	send_time_pulses(tmp_time.Hour / 10);
 	send_time_pulses(tmp_time.Hour % 10);
 	send_time_pulses(tmp_time.Minute / 10);
