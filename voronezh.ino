@@ -1,11 +1,17 @@
 #include <LiquidCrystal.h>
 #include <TimeLib.h>
+#include <inttypes.h>
+
+#define POS_SIG	2
+#define NEG_SIG	3
 
 tmElements_t m_time = {0};
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);// RS E
 
 void setup() {
-	Serial.begin(9600);
+//	Serial.begin(9600);
+	pinMode(POS_SIG, OUTPUT);
+	pinMode(NEG_SIG, OUTPUT);
 	lcd.begin(16, 2);
 }
 
@@ -120,8 +126,57 @@ void print_the_time () {
 	}
 }
 
+#define LONG_NEG 	19	//ms
+#define SHORT_P		6		//ms
+#define	LAST_LONG 55	//ms
+
+void send_time_pulses(uint8_t time_to_send) {
+	//start pulses
+	digitalWrite(POS_SIG, HIGH);
+	delay(SHORT_P);
+	digitalWrite(POS_SIG, LOW);
+	delay(SHORT_P);
+	
+	digitalWrite(NEG_SIG, HIGH);
+	delay(SHORT_P);
+	digitalWrite(NEG_SIG, LOW);
+	
+	//send time
+	for (int i = 0; i < time_to_send; i++) {
+		delay(SHORT_P);
+		digitalWrite(POS_SIG, HIGH);
+		delay(SHORT_P);
+		digitalWrite(POS_SIG, LOW);
+	}
+	//last long
+	delay(LAST_LONG);
+}
+
+void send_to_voronezh() {
+	tmElements_t tmp_time;
+	tmp_time = m_time;
+
+	//set default
+	digitalWrite(POS_SIG, LOW);
+	digitalWrite(NEG_SIG, LOW);
+	
+	//long negative pulse
+	digitalWrite(NEG_SIG, HIGH);
+	delay(LONG_NEG);
+	digitalWrite(NEG_SIG, LOW);
+	delay(SHORT_P);
+	
+	send_time_pulses(tmp_time.Hour / 10);
+	send_time_pulses(tmp_time.Hour % 10);
+	send_time_pulses(tmp_time.Minute / 10);
+	send_time_pulses(tmp_time.Minute % 10);
+	send_time_pulses(tmp_time.Second /10);
+	send_time_pulses(tmp_time.Second % 10);
+}
+
 void loop() {
 	if ( settime() || calc_of_the_current_time ()) {
 		print_the_time ();
 	}
+	send_to_voronezh();
 }
