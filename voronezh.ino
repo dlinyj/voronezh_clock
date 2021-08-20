@@ -13,12 +13,14 @@ void setup() {
 	pinMode(POS_SIG, OUTPUT);
 	pinMode(NEG_SIG, OUTPUT);
 	lcd.begin(16, 2);
+	m_time.Hour = 19;
+	m_time.Minute = 59;
 }
 
 int settime () {
 	int set = 0;
 	int keyAnalog =  analogRead(A0);
-	delay(50); //Timer 0
+	delayMicroseconds(50); //Timer 0
 
 	if ((keyAnalog < 800) && (keyAnalog > 600)) { //select = reset
 		set++;
@@ -60,7 +62,7 @@ exit:
 	if (set) {
 		m_time.Second = 0;
 	}
-	delay(200);
+	delayMicroseconds(200);
 	return set;
 }
 
@@ -126,30 +128,30 @@ void print_the_time () {
 	}
 }
 
-#define LONG_NEG 	19	//ms
-#define SHORT_P		6		//ms
-#define	LAST_LONG 55	//ms
+#define LONG_NEG	300	//us
+#define AFTER_LONG_NEG 1500
+//#define SHORT_P		100		//ms
+#define SHORT_P		40		//ms
+#define	LAST_LONG 	1800	//ms
 
 void send_time_pulses(uint8_t time_to_send) {
 	//start pulses
-	digitalWrite(POS_SIG, HIGH);
-	delay(SHORT_P);
 	digitalWrite(POS_SIG, LOW);
-	delay(SHORT_P);
-	
-	digitalWrite(NEG_SIG, HIGH);
-	delay(SHORT_P);
+	delayMicroseconds(SHORT_P);
+	digitalWrite(POS_SIG, HIGH);
 	digitalWrite(NEG_SIG, LOW);
-	
+	delayMicroseconds(2 * SHORT_P);
+	digitalWrite(NEG_SIG, HIGH);
+	delayMicroseconds(SHORT_P);
 	//send time
-	for (int i = 0; i < time_to_send; i++) {
-		delay(SHORT_P);
-		digitalWrite(POS_SIG, HIGH);
-		delay(SHORT_P);
+	int i;
+	for (i = 0; i < time_to_send; i++) {
+		delayMicroseconds(SHORT_P);
 		digitalWrite(POS_SIG, LOW);
+		delayMicroseconds(SHORT_P);
+		digitalWrite(POS_SIG, HIGH);
 	}
-	//last long
-	delay(LAST_LONG);
+	delayMicroseconds(LAST_LONG-i * 2 * SHORT_P);
 }
 
 void send_to_voronezh() {
@@ -157,21 +159,21 @@ void send_to_voronezh() {
 	tmp_time = m_time;
 
 	//set default
-	digitalWrite(POS_SIG, LOW);
-	digitalWrite(NEG_SIG, LOW);
+	digitalWrite(POS_SIG, HIGH);
+	digitalWrite(NEG_SIG, HIGH);
 	
 	//long negative pulse
-	digitalWrite(NEG_SIG, HIGH);
-	delay(LONG_NEG);
 	digitalWrite(NEG_SIG, LOW);
-	delay(SHORT_P);
-//	Serial.print("Hello world."); //for debug	
+	delayMicroseconds(LONG_NEG);
+	digitalWrite(NEG_SIG, HIGH);
+	delayMicroseconds(AFTER_LONG_NEG);
 	send_time_pulses(tmp_time.Hour / 10);
 	send_time_pulses(tmp_time.Hour % 10);
 	send_time_pulses(tmp_time.Minute / 10);
 	send_time_pulses(tmp_time.Minute % 10);
 	send_time_pulses(tmp_time.Second /10);
 	send_time_pulses(tmp_time.Second % 10);
+
 }
 
 void loop() {
