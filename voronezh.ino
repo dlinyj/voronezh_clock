@@ -130,15 +130,15 @@ void print_the_time () {
 
 #define LONG_NEG	300	//us
 #define AFTER_LONG_NEG 1500
-//#define SHORT_P		100		//ms
 #define SHORT_P		40		//ms
-#define	LAST_LONG 	1800	//ms
+#define	LAST_LONG 	1600	//ms
 
 void send_time_pulses(uint8_t time_to_send) {
 	//start pulses
 	digitalWrite(POS_SIG, LOW);
 	delayMicroseconds(SHORT_P);
 	digitalWrite(POS_SIG, HIGH);
+	delayMicroseconds(SHORT_P); //added
 	digitalWrite(NEG_SIG, LOW);
 	delayMicroseconds(2 * SHORT_P);
 	digitalWrite(NEG_SIG, HIGH);
@@ -177,7 +177,8 @@ void send_to_voronezh() {
 }
 
 void loop() {
-	if ( settime() || calc_of_the_current_time ()) {
+//	if ( settime() || calc_of_the_current_time ()) {
+	if ( calc_of_the_current_time ()) {
 		print_the_time ();
 	}
 	send_to_voronezh();
