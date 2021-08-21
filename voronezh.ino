@@ -1,6 +1,8 @@
 #include <LiquidCrystal.h>
 #include <TimeLib.h>
 #include <inttypes.h>
+#include <DS1307RTC.h>
+#include <Wire.h>
 
 #define POS_SIG	2
 #define NEG_SIG	3
@@ -13,14 +15,13 @@ void setup() {
 	pinMode(POS_SIG, OUTPUT);
 	pinMode(NEG_SIG, OUTPUT);
 	lcd.begin(16, 2);
-	m_time.Hour = 19;
-	m_time.Minute = 59;
 }
 
 int settime () {
 	int set = 0;
+	RTC.read(m_time);
 	int keyAnalog =  analogRead(A0);
-	delayMicroseconds(50); //Timer 0
+	delay(200); //Timer 0
 
 	if ((keyAnalog < 800) && (keyAnalog > 600)) { //select = reset
 		set++;
@@ -44,6 +45,7 @@ int settime () {
 	}
 	
 	if ((keyAnalog < 200) && (keyAnalog > 130)) { //up
+		set++;
 		m_time.Hour++; //h++;
 		if (m_time.Hour > 23) m_time.Hour = 0;
 		goto exit;
@@ -61,35 +63,9 @@ int settime () {
 exit:
 	if (set) {
 		m_time.Second = 0;
+		return RTC.write(m_time);
 	}
-	delayMicroseconds(200);
 	return set;
-}
-
-int calc_of_the_current_time () {
-	static unsigned long previousMillis = 0;  
-	const long interval = 1000;
-	unsigned long currentMillis = millis();
-	if(currentMillis - previousMillis > interval) {
-		previousMillis = currentMillis;
-		m_time.Second++;    
-		if (m_time.Second > 59) {   // если значение s больше 59
-			m_time.Second = 0;       // присваиваем значение 0 переменной s
-			m_time.Minute++;     // добавляем 1 к переменной m отвечающей за минуты
-		}
-		// секция подсчета минут
-		if (m_time.Minute > 59) {   // если значение m больше 59
-			m_time.Minute = 0;       // присваиваем значение 0 переменной m
-			m_time.Hour++;     // добавляем 1 к переменной h отвечающей за часы
-		}
-		// секция подсчета часов
-		if (m_time.Hour  > 23) {  // если значение h больше 23
-			m_time.Hour  = 0;       // присваиваем значение 0 переменной h
-		}
-		return 1;
-	} else {
-		return 0;
-	}
 }
 
 void print_the_time () {
@@ -177,9 +153,7 @@ void send_to_voronezh() {
 }
 
 void loop() {
-//	if ( settime() || calc_of_the_current_time ()) {
-	if ( calc_of_the_current_time ()) {
-		print_the_time ();
-	}
-	send_to_voronezh();
+	settime();
+	print_the_time ();
+//	send_to_voronezh();
 }
