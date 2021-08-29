@@ -41,9 +41,9 @@ void setup() {
 int settime () {
 	tmElements_t l_time = {0};
 	int set = 0;
-	RTC.read(l_time);
+	RTC.read(l_time); //read time from DS3231
 	noInterrupts();
-	m_time = l_time; //send time to timer function
+	m_time = l_time; //send time to output function
 	interrupts();
 	//delay(200)
 	static unsigned long old_time = 0;
@@ -144,10 +144,9 @@ void loop() {
 	print_the_time ();
 }
 
-
-#define START_DURATION	200
-#define PULSE_DURATION	150
+#define PULSE_DURATION	50
 #define TIMER_PERIOD	50
+#define DELAY_AFTER_PULSE_TRAIN	2700
 
 #define H_SYNC_PULSE	0
 #define L_SYNC_PULSE	1
@@ -177,9 +176,7 @@ ISR(TIMER1_COMPA_vect) {
 	static uint8_t numbers[6] 	={0};
 	static uint8_t number_send	= 0;
 	static uint8_t current_num	= 0;
-	
 	static uint8_t pkg_stage	= 0;
-	
 	static uint16_t _delay	 	= 0;
 	
 	if (_delay >= TIMER_PERIOD) {
@@ -189,7 +186,6 @@ ISR(TIMER1_COMPA_vect) {
 		_delay = 0;
 	}
 	if (0 == pkg_stage) {
-		
 		SET_BIT(pkg_stage, H_SYNC_PULSE); //h-sync pulse stage
 		numbers[0]	= m_time.Hour / 10;
 		numbers[1]	= m_time.Hour % 10;
@@ -199,7 +195,7 @@ ISR(TIMER1_COMPA_vect) {
 		numbers[5]	= m_time.Second % 10;
 		//first pulse
 		set_nego_sig();
-		_delay 		= START_DURATION;
+		_delay 		= PULSE_DURATION;
 		goto exit_isr;
 	} else {
 		set_zero_sig();
@@ -239,7 +235,7 @@ ISR(TIMER1_COMPA_vect) {
 					goto exit_isr;
 				}
 			} else {
-				_delay = (9 - number_send) * 2 * PULSE_DURATION;
+				_delay = DELAY_AFTER_PULSE_TRAIN -  number_send * 2 * PULSE_DURATION;
 				set_zero_sig();
 				if (current_num < 5) {
 					current_num++;
