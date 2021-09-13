@@ -10,7 +10,7 @@
 tmElements_t m_time = {0};
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);// RS E
 
-boolean blink = true;
+volatile boolean blink = true;
 
 // keypad keys definitions
 enum KP
@@ -108,6 +108,15 @@ exit:
 	return;
 }
 
+boolean test_leap_year(uint8_t year)  {
+	uint16_t current_year = tmYearToCalendar(year);
+	if ((((current_year%400)==0) || ((current_year%4)==0)) && !((current_year%100)==0)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 uint8_t  settime () {
 	tmElements_t l_time = {0};
 	int set = 0;
@@ -164,8 +173,7 @@ uint8_t  settime () {
 								(l_time.Month == 2 && l_time.Day < 28)
 								||
 								(l_time.Month == 2 && l_time.Day == 28 &&
-								(((l_time.Year%400)==0) || ((l_time.Year%4)==0)) && ! ((l_time.Year%100)==0))
-								) {
+								test_leap_year(l_time.Year))) {
 									l_time.Day++;
 							}
 						break;
@@ -226,15 +234,15 @@ uint8_t  settime () {
 
 
 			if (set) {
+
 				if (l_time.Month != 2 && l_time.Day > month_days[l_time.Month]) {
 					l_time.Day = month_days[l_time.Month];
 				}
 				if (l_time.Month == 2) {
-					if ((((l_time.Year%400)==0) || ((l_time.Year%4)==0)) && ! ((l_time.Year%100)==0)
-						&& l_time.Day > 29) {
+					if (test_leap_year(l_time.Year) && l_time.Day >= 29) {
 						l_time.Day = 29;
 					} else {
-						if (l_time.Day > 28) {
+						if (l_time.Day >= 28) {
 							l_time.Day = 28;
 						}
 					}
