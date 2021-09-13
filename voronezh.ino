@@ -232,9 +232,7 @@ uint8_t  settime () {
 				}
 			}
 
-
 			if (set) {
-
 				if (l_time.Month != 2 && l_time.Day > month_days[l_time.Month]) {
 					l_time.Day = month_days[l_time.Month];
 				}
@@ -376,16 +374,19 @@ void loop() {
 
 
 void set_zero_sig() {
-	digitalWrite(POS_SIG, HIGH);
-	digitalWrite(NEG_SIG, HIGH);
+//	digitalWrite(POS_SIG, HIGH);
+//	digitalWrite(NEG_SIG, HIGH);
+	PORTD |= (1 << POS_SIG) | (1 << NEG_SIG);
 }
 
 void set_posi_sig() {
-	digitalWrite(POS_SIG, LOW);
+//	digitalWrite(POS_SIG, LOW);
+	PORTD &=~ (1 << POS_SIG);
 }
 
 void set_nego_sig() {
-	digitalWrite(NEG_SIG, LOW);
+//	digitalWrite(NEG_SIG, LOW);
+	PORTD &=~ (1 << NEG_SIG);
 }
 
 ISR(TIMER1_COMPA_vect) {
