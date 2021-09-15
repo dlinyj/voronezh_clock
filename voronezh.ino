@@ -4,6 +4,8 @@
 #include <DS1307RTC.h>
 #include <Wire.h>
 
+#define SHOWDATE
+
 #define POS_SIG	2
 #define NEG_SIG	3
 
@@ -120,6 +122,18 @@ boolean test_leap_year(uint8_t year)  {
 
 void load_time () {
 	noInterrupts();
+#ifdef SHOWDATE
+	if ((m_time.Second >= 25) && (m_time.Second <= 35)) {
+		numbers[0]	= m_time.Day / 10;
+		numbers[1]	= m_time.Day % 10;
+		numbers[2]	= m_time.Month / 10;
+		numbers[3]	= m_time.Month % 10;
+		numbers[4]	= tmYearToY2k(m_time.Year) /10;
+		numbers[5]	= tmYearToY2k(m_time.Year) % 10;
+		interrupts();
+		return;
+	}
+#endif
 	numbers[0]	= m_time.Hour / 10;
 	numbers[1]	= m_time.Hour % 10;
 	numbers[2]	= m_time.Minute / 10;
